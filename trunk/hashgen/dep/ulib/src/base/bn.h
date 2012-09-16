@@ -23,34 +23,18 @@
    SOFTWARE.
 */
 
-#ifndef _FASTHASH_H
-#define _FASTHASH_H
-
-#include <stdint.h>
-#include <stdio.h>
+#ifndef __ULIB_BN_H
+#define __ULIB_BN_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * fasthash32 - 32-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint32_t fasthash32(const void *buf, size_t len, uint32_t seed);
-
-/**
- * fasthash64 - 64-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint64_t fasthash64(const void *buf, size_t len, uint64_t seed);
+        /* Compute a^b % m */
+	unsigned long mpower(unsigned long a, unsigned long b, unsigned long m);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __ULIB_BN_H */

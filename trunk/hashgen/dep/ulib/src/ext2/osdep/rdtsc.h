@@ -1,6 +1,7 @@
 /* The MIT License
 
    Copyright (C) 2012 Zilong Tan (eric.zltan@gmail.com)
+                 2005 kazutomo (kazutomo@mcs.anl.gov)
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation
@@ -23,34 +24,56 @@
    SOFTWARE.
 */
 
-#ifndef _FASTHASH_H
-#define _FASTHASH_H
+#ifndef __ULIB_RDTSC_H
+#define __ULIB_RDTSC_H
 
 #include <stdint.h>
-#include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if defined(__i386__)
 
-/**
- * fasthash32 - 32-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint32_t fasthash32(const void *buf, size_t len, uint32_t seed);
-
-/**
- * fasthash64 - 64-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint64_t fasthash64(const void *buf, size_t len, uint64_t seed);
-
-#ifdef __cplusplus
+static __inline__ uint64_t rdtsc(void)
+{
+	uint64_t x;
+	__asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+	return x;
 }
-#endif
+
+#elif defined(__x86_64__)
+
+static __inline__ uint64_t rdtsc(void)
+{
+	unsigned hi, lo;
+	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+	return ((uint64_t)lo) | (((uint64_t)hi) << 32);
+}
+
+#elif defined(__powerpc__)
+
+static __inline__ uint64_t rdtsc(void)
+{
+	uint64_t result = 0;
+	unsigned long upper, lower, tmp;
+
+	__asm__ volatile(
+                "0:                 \n"
+                "\tmftbu   %0       \n"
+                "\tmftb    %1       \n"
+                "\tmftbu   %2       \n"
+                "\tcmpw    %2,%0    \n"
+                "\tbne     0b       \n"
+                : "=r"(upper),"=r"(lower),"=r"(tmp)
+                );
+
+	result = upper;
+	result = result << 32;
+	result = result | lower;
+	return result;
+}
+
+#else
+
+#error "No tick counter is available!"
 
 #endif
+
+#endif  /*  __ULIB_RDSTC_H */

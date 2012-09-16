@@ -23,34 +23,41 @@
    SOFTWARE.
 */
 
-#ifndef _FASTHASH_H
-#define _FASTHASH_H
+// avalanche driver
 
-#include <stdint.h>
-#include <stdio.h>
+#include <ulib/hash.h>
+#include "xxhash.h"
+#include "avalanche.h"
+#include "../fasthash.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * fasthash32 - 32-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint32_t fasthash32(const void *buf, size_t len, uint32_t seed);
-
-/**
- * fasthash64 - 64-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint64_t fasthash64(const void *buf, size_t len, uint64_t seed);
-
-#ifdef __cplusplus
+static uint64_t fasthash64_noseed(const void *buf, size_t len)
+{
+	return fasthash64(buf, len, 0);
 }
-#endif
 
-#endif
+static uint64_t hash_jenkins_noseed(const void *buf, size_t len)
+{
+	uint64_t hash = 0x0000000100000001ULL;
+	uint32_t *ph  = (uint32_t *)&hash;
+	hash_jenkins2(buf, len, ph, ph + 1);
+	return hash;
+}
+
+static uint64_t hash_xxhash_noseed(const void *buf, size_t len)
+{
+	uint64_t low, high;
+	low  = XXH_fast32(buf, len, 0);
+	high = XXH_fast32(buf, len, 1);
+	return low | (high << 32);
+}
+
+int main()
+{
+	avalanche aval;
+
+	printf("Overall quality of jenkinshash : %f\n", aval(hash_jenkins_noseed, 49, 5000));
+	printf("Overall quality of fasthash    : %f\n", aval(fasthash64_noseed,   49, 5000));
+	printf("Overall quality of xxhash      : %f\n", aval(hash_xxhash_noseed,  49, 5000));
+
+	return 0;
+}

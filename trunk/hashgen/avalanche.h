@@ -23,34 +23,42 @@
    SOFTWARE.
 */
 
-#ifndef _FASTHASH_H
-#define _FASTHASH_H
+#ifndef _AVALANCHE_H
+#define _AVALANCHE_H
 
 #include <stdint.h>
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// score ratios
+extern float volatile g_aval_r;
+extern float volatile g_indep_r;
 
-/**
- * fasthash32 - 32-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint32_t fasthash32(const void *buf, size_t len, uint32_t seed);
+#define DEF_IND 10.0
 
-/**
- * fasthash64 - 64-bit implementation of fasthash
- * @buf:  data buffer
- * @len:  data size
- * @seed: the seed
- */
-	uint64_t fasthash64(const void *buf, size_t len, uint64_t seed);
+class avalanche {
+public:
+	typedef uint64_t (* hash_func_t)(const void *, size_t);
+	
+	avalanche();
 
-#ifdef __cplusplus
-}
-#endif
+	static void
+	sample(uint64_t diff, float m[]);
+	
+	// evaluate the quality of test hash function
+	static float
+	evaluate(const float mat[][64], int nbit);
+
+	void
+	measure(float mat[][64], hash_func_t f, int len, int times);
+
+	float
+	operator()(hash_func_t f, int len, int times);
+
+private:
+	// fill buf with random numbers
+	void _rand_fill(void *buf, size_t len);
+
+	uint64_t _u, _v, _w;  // RNG context
+};
 
 #endif
