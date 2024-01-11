@@ -193,6 +193,8 @@ public:
 
     if (_op_seq.size() == 0) {
       op *new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
+      while (new_op->type == OP_ADD) // don't start with the worst op
+        new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       _op_seq.push_back(new_op);
       new_op->start();
       // ULIB_DEBUG("new op with type=%d was successfully added", new_op->type);
