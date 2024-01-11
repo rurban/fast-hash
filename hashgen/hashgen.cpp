@@ -218,7 +218,7 @@ public:
   void del_op(uint64_t rnd) {
     lock();
 
-    if (_op_seq.size() > (unsigned)_min_seq) {
+    if (_op_seq.size() > (unsigned)_max_seq) {
       uint32_t pos = rnd % _op_seq.size();
       op *tmp = _op_seq[pos];
       _op_seq.erase(_op_seq.begin() + pos);
