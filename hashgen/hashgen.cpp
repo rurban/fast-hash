@@ -88,7 +88,7 @@ public:
           if (!_op->gen->evolve()) {
             // ULIB_DEBUG("attempt to evolve with arg:%016llx -> %016llx was
             // cancelled", 	   (unsigned long long)old, (unsigned long
-            //long)_op->arg);
+            // long)_op->arg);
             _op->arg = old;
           } else {
             ULIB_DEBUG("arg optimized: %016llx -> %016llx",
@@ -197,7 +197,7 @@ public:
         new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       _op_seq.push_back(new_op);
       new_op->start();
-      // ULIB_DEBUG("new op with type=%d was successfully added", new_op->type);
+      // ULIB_DEBUG("new op with type=%d added", new_op->type);
     } else if (_op_seq.size() < (unsigned)_max_seq) {
       op *new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       uint32_t pos = r1 % (_op_seq.size() + 1);
@@ -208,7 +208,7 @@ public:
         _op_seq.erase(_op_seq.begin() + pos);
         delete new_op;
       } else {
-        ULIB_DEBUG("new op with type=%d was successfully added to pos=%u",
+        ULIB_DEBUG("new op with type=%d added to pos=%u",
                    new_op->type, pos);
         new_op->start();
       }
@@ -228,7 +228,7 @@ public:
         // ULIB_DEBUG("attempt to erase op at pos=%u was cancelled", pos);
         _op_seq.insert(_op_seq.begin() + pos, tmp);
       } else {
-        ULIB_DEBUG("erased op at pos=%u successfully", pos);
+        ULIB_DEBUG("erased op at pos=%u", pos);
         unlock();
         delete tmp;
         return;
@@ -253,7 +253,7 @@ public:
         _op_seq[pos]->type = old_type;
         _op_seq[pos]->arg = old_arg;
       } else {
-        ULIB_DEBUG("modified op at pos=%u successfully", pos);
+        ULIB_DEBUG("modified op at pos=%u", pos);
       }
     }
 
@@ -283,7 +283,7 @@ public:
           _op_seq[pos1]->arg = _op_seq[pos2]->arg;
           _op_seq[pos2]->arg = tmp_arg;
         } else {
-          ULIB_DEBUG("swapped pos1=%u and pos2=%u successfully", pos1, pos2);
+          ULIB_DEBUG("swapped pos1=%u and pos2=%u", pos1, pos2);
         }
       }
     }
@@ -443,7 +443,7 @@ private:
     timer_start(&timer);
     if (_best_seen_score < 0) {
       // first time
-      _update_best_seen();
+      _init_with_fasthash();
       _best_seen_score = aval(gen_hash, g_aval_len, g_aval_times);
       time_score = timer_stop(&timer) * g_time_r;
       _best_seen_score += time_score;
@@ -494,6 +494,29 @@ private:
       }
     }
     printf("\t%f\n", _best_seen_score);
+  }
+
+
+  // start with a good baseline, what Zilong Tan computed as best in 2012.
+  // and then get at least 2x as good.
+  void _init_with_fasthash() {
+    _best_seen.clear();
+    _op_seq.clear();
+    
+    pair<op_type, uint64_t> ts[] = {
+	    {OP_XSR, 23},
+	    {OP_MUL, 0x2127599bf4325c37ULL},
+	    {OP_XSR, 47},
+    };
+    for (int i = 0; i < 3; i++) {
+      auto t = ts[i];
+      op *new_op = new op(t.first, hashgen::instance);
+      new_op->arg = t.second;
+      _op_seq.push_back(new_op);
+      _best_seen.push_back(t);
+    }
+
+    _print_best_seen();
   }
 
   void _update_best_seen() {

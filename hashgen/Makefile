@@ -12,8 +12,9 @@ LDFLAGS  = -L $(ULIB_LIB) -lulib -lm -lrt -lpthread
 
 all: dep avalanche hashgen
 
-dep: ../fasthash.o
+dep/ulib/lib/libulib.a:
 	make -C dep/ulib release
+dep: ../fasthash.o dep/ulib/lib/libulib.a
 
 avalanche: avalanche.o aval_main.o xxhash.o
 	$(CXX) avalanche.o ../fasthash.o aval_main.o xxhash.c -o avalanche $(LDFLAGS)
