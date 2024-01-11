@@ -37,28 +37,24 @@ extern float volatile g_indep_r;
 
 class avalanche {
 public:
-	typedef uint64_t (* hash_func_t)(const void *, size_t);
-	
-	avalanche();
+  typedef uint64_t (*hash_func_t)(const void *, size_t);
 
-	static void
-	sample(uint64_t diff, float m[]);
-	
-	// evaluate the quality of test hash function
-	static float
-	evaluate(const float mat[][64], int nbit);
+  avalanche();
 
-	void
-	measure(float mat[][64], hash_func_t f, int len, int times);
+  static void sample(uint64_t diff, float m[]);
 
-	float
-	operator()(hash_func_t f, int len, int times);
+  // evaluate the quality of test hash function
+  static float evaluate(const float mat[][64], int nbit);
+
+  void measure(float mat[][64], hash_func_t f, int len, int times);
+
+  float operator()(hash_func_t f, int len, int times);
 
 private:
-	// fill buf with random numbers
-	void _rand_fill(void *buf, size_t len);
+  // fill buf with random numbers
+  void _rand_fill(void *buf, size_t len);
 
-	uint64_t _u, _v, _w;  // RNG context
+  uint64_t _u, _v, _w; // RNG context
 };
 
 #endif
