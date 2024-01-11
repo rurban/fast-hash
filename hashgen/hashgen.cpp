@@ -105,11 +105,14 @@ public:
 
     void update(uint64_t v) {
       switch (type) {
-      case OP_MUL:
+      case OP_ADD: // by 0 makes not much sense
+	if (!v)
+	  v |= 1;
+	break;
+      case OP_MUL: // by 0,2,4 is a XSL
         v |= 1;
-        break;
-      case OP_ADD:
-      case OP_XSL:
+	break;
+      case OP_XSL: // limited to 64 bits
       case OP_XSR:
       case OP_ROR:
         v = v % 63 + 1;
@@ -140,7 +143,7 @@ public:
   };
 
   hashgen()
-      : _min_seq(3), _max_seq(3),
+      : _min_seq(2), _max_seq(4),
         _best_seen_score(-1) // negative value indicates it is uninitialized
   {
     pthread_mutex_init(&_mutex, NULL);

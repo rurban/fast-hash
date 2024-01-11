@@ -131,7 +131,7 @@ enum {
 	alignhash_get_##_name(const alignhash_##_name##_t *h, _key_t key) \
 	{								\
 		if (h->nbucket) {					\
-			register ah_size_t i, step;			\
+			/*register*/ ah_size_t i, step;			\
 			ah_size_t mask = h->nbucket - 1;		\
 			ah_size_t k, last;				\
 			k = _hashfn(key);				\
@@ -190,7 +190,7 @@ enum {
 					val = h->vals[j];		\
 				AH_SET_DEL(h->flags, j);		\
 				for (;;) {				\
-					register ah_size_t i, step;	\
+					/*register*/ ah_size_t i, step;	\
 					ah_size_t k;			\
 					k = _hashfn(key);		\
 					i = k & new_mask;		\
@@ -235,7 +235,7 @@ enum {
 	static inline ah_iter_t						\
 	alignhash_set_##_name(alignhash_##_name##_t *h, _key_t key, int *ret) \
 	{								\
-		register ah_size_t i, step;				\
+		/*register*/ ah_size_t i, step;				\
 		ah_size_t x, k, mask, site, last;			\
 		if (h->nused >= h->sup) {				\
 			if (h->nbucket) {				\

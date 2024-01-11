@@ -36,7 +36,7 @@
 	static inline void					\
 	part_##name(type *base, type *median, type *last)	\
 	{							\
-		register type *s, *t, *p, *q, *m;		\
+		/*register*/ type *s, *t, *p, *q, *m;		\
 		type e;						\
 								\
 		s = base;					\

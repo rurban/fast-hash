@@ -48,13 +48,13 @@ uint64_t hash_fast64(const void *buf, size_t len, uint64_t seed)
 	v = 0;
 
 	switch (len & 7) {
-	case 7: v ^= (uint64_t)pc[6] << 48;
-	case 6: v ^= (uint64_t)pc[5] << 40;
-	case 5: v ^= (uint64_t)pc[4] << 32;
-	case 4: v ^= (uint64_t)pc[3] << 24;
-	case 3: v ^= (uint64_t)pc[2] << 16;
-	case 2: v ^= (uint64_t)pc[1] << 8;
-	case 1: v ^= (uint64_t)pc[0];
+	case 7: v ^= (uint64_t)pc[6] << 48; /* fall through */
+	case 6: v ^= (uint64_t)pc[5] << 40; /* fall through */
+	case 5: v ^= (uint64_t)pc[4] << 32; /* fall through */
+	case 4: v ^= (uint64_t)pc[3] << 24; /* fall through */
+	case 3: v ^= (uint64_t)pc[2] << 16; /* fall through */
+	case 2: v ^= (uint64_t)pc[1] << 8; /* fall through */
+	case 1: v ^= (uint64_t)pc[0]; /* fall through */
 		v ^= v >> 23;
 		v *= 0x2127599bf4325c37ULL;
 		h ^= v ^ (v >> 47);
@@ -337,17 +337,17 @@ uint32_t hash_jenkins(const void *key, size_t length, uint32_t initval)
 		/*-------------------------------- last block: affect all 32 bits of (c) */
 		switch(length)                   /* all the case statements fall through */
 		{
-		case 12: c+=((uint32_t)k[11])<<24;
-		case 11: c+=((uint32_t)k[10])<<16;
-		case 10: c+=((uint32_t)k[9])<<8;
-		case 9 : c+=k[8];
-		case 8 : b+=((uint32_t)k[7])<<24;
-		case 7 : b+=((uint32_t)k[6])<<16;
-		case 6 : b+=((uint32_t)k[5])<<8;
-		case 5 : b+=k[4];
-		case 4 : a+=((uint32_t)k[3])<<24;
-		case 3 : a+=((uint32_t)k[2])<<16;
-		case 2 : a+=((uint32_t)k[1])<<8;
+		case 12: c+=((uint32_t)k[11])<<24;/* fall through */
+		case 11: c+=((uint32_t)k[10])<<16;/* fall through */
+		case 10: c+=((uint32_t)k[9])<<8;  /* fall through */
+		case 9 : c+=k[8];                 /* fall through */
+		case 8 : b+=((uint32_t)k[7])<<24; /* fall through */
+		case 7 : b+=((uint32_t)k[6])<<16; /* fall through */
+		case 6 : b+=((uint32_t)k[5])<<8;  /* fall through */
+		case 5 : b+=k[4];                 /* fall through */
+		case 4 : a+=((uint32_t)k[3])<<24; /* fall through */
+		case 3 : a+=((uint32_t)k[2])<<16; /* fall through */
+		case 2 : a+=((uint32_t)k[1])<<8;  /* fall through */
 		case 1 : a+=k[0];
 			break;
 		case 0 : return c;
@@ -518,17 +518,17 @@ void hash_jenkins2(const void *key, size_t length, uint32_t *pc, uint32_t *pb)
 		/*-------------------------------- last block: affect all 32 bits of (c) */
 		switch(length)                   /* all the case statements fall through */
 		{
-		case 12: c+=((uint32_t)k[11])<<24;
-		case 11: c+=((uint32_t)k[10])<<16;
-		case 10: c+=((uint32_t)k[9])<<8;
-		case 9 : c+=k[8];
-		case 8 : b+=((uint32_t)k[7])<<24;
-		case 7 : b+=((uint32_t)k[6])<<16;
-		case 6 : b+=((uint32_t)k[5])<<8;
-		case 5 : b+=k[4];
-		case 4 : a+=((uint32_t)k[3])<<24;
-		case 3 : a+=((uint32_t)k[2])<<16;
-		case 2 : a+=((uint32_t)k[1])<<8;
+		case 12: c+=((uint32_t)k[11])<<24; /* fall through */
+		case 11: c+=((uint32_t)k[10])<<16; /* fall through */
+		case 10: c+=((uint32_t)k[9])<<8; /* fall through */
+		case 9 : c+=k[8]; /* fall through */
+		case 8 : b+=((uint32_t)k[7])<<24; /* fall through */
+		case 7 : b+=((uint32_t)k[6])<<16; /* fall through */
+		case 6 : b+=((uint32_t)k[5])<<8; /* fall through */
+		case 5 : b+=k[4]; /* fall through */
+		case 4 : a+=((uint32_t)k[3])<<24; /* fall through */
+		case 3 : a+=((uint32_t)k[2])<<16; /* fall through */
+		case 2 : a+=((uint32_t)k[1])<<8; /* fall through */
 		case 1 : a+=k[0];
 			break;
 		case 0 : *pc=c; *pb=b; return;  /* zero length strings require no mixing */

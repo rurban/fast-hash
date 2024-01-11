@@ -34,7 +34,7 @@
 	static inline void						\
 	heap_push_##name(type *base, size_t hole, size_t top, type val)	\
 	{								\
-		register size_t parent = HEAP_PARENT(hole);		\
+		/*register */size_t parent = HEAP_PARENT(hole);		\
 									\
 		while (hole > top && lt(base[parent], val)) {		\
 			base[hole] = base[parent];			\
@@ -47,8 +47,8 @@
 	static inline void						\
 	heap_adjust_##name(type *base, size_t size, size_t hole, type val) \
 	{								\
-		register size_t large = HEAP_RIGHT(hole);		\
-		register size_t top = hole;				\
+		/*register*/ size_t large = HEAP_RIGHT(hole);		\
+		/*register*/ size_t top = hole;				\
 									\
 		while (large < size) {					\
 			if (lt(base[large], base[large - 1]))		\
@@ -67,8 +67,8 @@
 	static inline void						\
 	heap_init_##name(type *base, type *last)			\
 	{								\
-		register size_t size   = last - base;			\
-		register size_t parent = size / 2 - 1;			\
+		/*register*/ size_t size   = last - base;			\
+		/*register*/ size_t parent = size / 2 - 1;			\
 									\
 		if (size < 2)						\
 			return;						\
