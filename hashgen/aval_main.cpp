@@ -54,9 +54,11 @@ static uint64_t hash_xxhash_noseed(const void *buf, size_t len)
 int main()
 {
 	avalanche aval;
-
+        // 3.747583
 	printf("Overall quality of jenkinshash : %f\n", aval(hash_jenkins_noseed, 49, 5000));
+        // 2.272378
 	printf("Overall quality of fasthash    : %f\n", aval(fasthash64_noseed,   49, 5000));
+        // 3.463349
 	printf("Overall quality of xxhash      : %f\n", aval(hash_xxhash_noseed,  49, 5000));
 
 	return 0;

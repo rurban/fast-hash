@@ -16,10 +16,10 @@ dep: ../fasthash.o
 	make -C dep/ulib release
 
 avalanche: avalanche.o aval_main.o xxhash.o
-	$(CXX) avalanche.o ../fasthash.o aval_main.o xxhash.o -o avalanche $(LDFLAGS)
+	$(CXX) avalanche.o ../fasthash.o aval_main.o xxhash.c -o avalanche $(LDFLAGS)
 
 hashgen: hashgen.o xxhash.o
-	$(CXX) avalanche.o hashgen.o ../fasthash.o xxhash.o -o hashgen $(LDFLAGS)
+	$(CXX) avalanche.o hashgen.o ../fasthash.o xxhash.c -o hashgen $(LDFLAGS)
 
 magic: magic.o
 	$(CXX) magic.o -o magic $(LDFLAGS)

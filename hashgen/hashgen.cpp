@@ -61,6 +61,7 @@ public:
 		OP_XSL = 1,  // xorshift left
 		OP_XSR = 2,  // xorshift right
 		OP_ROR = 3,  // rotate right
+		OP_ADD = 4,  // add
 		OP_NUM       // number of operations
 	};
 
@@ -111,6 +112,7 @@ public:
 			case OP_MUL:
 				v |= 1;
 				break;
+			case OP_ADD:
 			case OP_XSL: 
 			case OP_XSR:
 			case OP_ROR:
@@ -363,11 +365,17 @@ public:
 
 			switch (len & 7) {
 			case 7: t ^= (uint64_t)pc[6] << 48;
+			// fallthrough
 			case 6: t ^= (uint64_t)pc[5] << 40;
+			// fallthrough
 			case 5: t ^= (uint64_t)pc[4] << 32;
+			// fallthrough
 			case 4: t ^= (uint64_t)pc[3] << 24;
+			// fallthrough
 			case 3: t ^= (uint64_t)pc[2] << 16;
+			// fallthrough
 			case 2: t ^= (uint64_t)pc[1] << 8;
+			// fallthrough
 			case 1: t ^= (uint64_t)pc[0];
 				v = (ROR64(v, 37) + *pos++) * m2;
 			}
@@ -441,6 +449,9 @@ private:
 			case OP_MUL:
 				init *= (*it)->arg;
 				break;
+			case OP_ADD:
+				init += (*it)->arg;
+				break;
 			case OP_XSL:
 				init ^= init << (*it)->arg;
 				break;
@@ -500,6 +511,9 @@ private:
 			switch (it->first) {
 			case OP_MUL:
 				printf("MUL(%016llx) ", (unsigned long long)it->second);
+				break;
+			case OP_ADD:
+				printf("ADD(%016llx) ", (unsigned long long)it->second);
 				break;
 			case OP_XSL:
 				printf("XSL(%u) ", (unsigned)it->second);
@@ -753,6 +767,7 @@ int cmd_standard(int, const char **)
 	tscore = timer_stop(&timer) * g_time_r;
 	printf("JenkinsHash: aval_score=%f, time_score=%f, overall=%f\n",
 	       ascore, tscore, ascore + tscore);
+
 	timer_start(&timer);
 	ascore = aval(hash_xxhash_noseed, g_aval_len, g_aval_times);
 	tscore = timer_stop(&timer) * g_time_r;

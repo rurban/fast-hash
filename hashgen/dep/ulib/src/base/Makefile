@@ -6,7 +6,7 @@ LIBPATH		= $(WORKROOT)/lib
 TARGET		= $(LIBPATH)/libubase.a
 
 CC		?= gcc
-CFLAGS		?= -g3 -O2 -Wall -W -Werror -pipe -c -fno-strict-aliasing
+CFLAGS		?= -g3 -O2 -Wall -W -pipe -c -fno-strict-aliasing
 DEBUG		?=
 
 DS_OBJS		= tree.o treeutils.o bitmap.o chainhash.o
