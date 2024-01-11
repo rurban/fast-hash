@@ -11,7 +11,7 @@ LIBPATH	= $(ROOT)/lib
 TARGET	= $(LIBPATH)/librng.a
 
 CC	?= gcc
-CFLAGS	?= -g3 -O2 -Wall -W -Werror -pipe -c
+CFLAGS	?= -g3 -O3 -Wall -W -Werror -c -march=native
 
 #
 # define object files below

@@ -1,8 +1,8 @@
 ULIB_INC = dep/ulib/include
 ULIB_LIB = dep/ulib/lib
 
-CXXFLAGS = -DUNDEBUG -I $(ULIB_INC) -O3 -W -Wall -pipe
-#CXXFLAGS = -I $(ULIB_INC) -O3 -W -Wall -pipe
+CXXFLAGS = -DUNDEBUG -I $(ULIB_INC) -O3 -W -Wall -march=native
+#CXXFLAGS = -I $(ULIB_INC) -g -O3 -W -Wall -march=native
 LDFLAGS  = -L $(ULIB_LIB) -lulib -lm -lrt -lpthread
 
 .cpp.o:
