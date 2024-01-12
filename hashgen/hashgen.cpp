@@ -44,6 +44,8 @@
 #include <ulib/thread.h>
 #include <ulib/timer.h>
 
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
 // Feistel structure round
 #define FS_ROUND(a, b, F)                                                      \
   ({                                                                           \
@@ -148,8 +150,8 @@ public:
   };
 
   hashgen()
-      : _min_seq(2), _max_seq(4),
-        _best_seen_score(-1) // negative value indicates it is uninitialized
+    : _min_seq(2), _max_seq(5), // murmur has 5
+      _best_seen_score(-1) // negative value for uninitialized
   {
     pthread_mutex_init(&_mutex, NULL);
     ctrl_add_op = new thread_add_op(this);
@@ -478,7 +480,7 @@ private:
     float time_score;
     bool ret = true;
 
-    if (_best_seen_score < 0) {
+    if (unlikely(_best_seen_score < 0)) {
       // first time
       _init_with_latest();
       // warmup
