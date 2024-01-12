@@ -61,6 +61,8 @@ int volatile g_aval_times = 5000;
 float volatile g_time_r = 1;
 #define BUF_SIZE 32
 
+// see also https://github.com/skeeto/hash-prospector
+// which is optimized for 32bit and adds a bias score.
 class hashgen {
 public:
   enum op_type {
@@ -69,8 +71,14 @@ public:
     OP_XSL = 1, // xorshift left
     OP_XSR = 2, // xorshift right
     OP_ROR = 3, // rotate right
+    // worse ops:
     OP_ADD = 4, // add
     OP_XOR = 5, // xor
+    OP_NOT = 6, // ~
+    OP_ASL = 7, // addshift left
+    OP_SSL = 8, // subshift left
+    OP_SUB = 9, // sub
+    OP_LOR = 10,// rotate left
     OP_NUM      // number of operations
   };
 
@@ -113,6 +121,7 @@ public:
     void update(uint64_t v) {
       switch (type) {
       case OP_ADD: // by 0 makes not much sense
+      case OP_SUB:
 	if (!v)
 	  v |= 1;
 	break;
@@ -123,7 +132,12 @@ public:
       case OP_XSR:
       case OP_ROR:
       case OP_XOR:
+      case OP_ASL:
+      case OP_SSL:
+      case OP_LOR:
         v = v % 63 + 1;
+        break;
+      case OP_NOT:
         break;
       default:
         ULIB_FATAL("unknown op_type: %d", type);
@@ -468,6 +482,23 @@ private:
       case OP_ROR:
         init ^= ROR64(init, (*it)->arg);
         break;
+      case OP_NOT:
+        init = ~init;
+        break;
+      case OP_ASL:
+        init += init << (*it)->arg;
+        break;
+      case OP_SSL:
+        init -= init << (*it)->arg;
+        break;
+      case OP_SUB:
+        init -= (*it)->arg;
+        break;
+      case OP_LOR:
+        init <<= (*it)->arg;
+        break;
+      // init += ~(init << (*it)->arg)
+      // init -= ~(init << (*it)->arg)
       default:
         ULIB_FATAL("unknown op type:%d", (*it)->type);
       }
