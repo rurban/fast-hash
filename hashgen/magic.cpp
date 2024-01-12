@@ -14,7 +14,7 @@ int main() {
     s = (uint32_t)(RAND_NR_NEXT(u, v, w) | 3);
   while (mpower(s, 1 << 29, 1ull << 32) == 1);
 
-  printf("generator of 2^32: %08lx\n", s);
+  printf("generator of 2^32: 0x%08lx\n", s);
 
   return 0;
 }

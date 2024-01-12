@@ -5,4 +5,7 @@ Best seen combination:ROR(34) MUL(10a649d6592e1d8b) XSR(22) ROR(37) 	2.309600
 Updated best seen score: aval_score=1.695067, time_score=0.598437, overall=2.293504
 
 Best seen combination:XSR(23) ROR(38) MUL(2127599bf4325c37) XSR(47)
-Updated best seen score: aval_score=1.695534, time_score=0.589147, overall=2.284681
+Updated best seen score: aval_score=1.695534, time_score=0.589147, overall=2.284681/2.523612
+
+Best seen combination:ROR(18) ROR(38) MUL(2127599bf4325c37) XSR(34) 	2.523612
+Updated best seen score: aval_score=1.692642, time_score=0.603078, overall=2.295720

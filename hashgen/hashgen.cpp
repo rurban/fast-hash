@@ -2,6 +2,7 @@
 
 
    Copyright (C) 2012 Zilong Tan (eric.zltan@gmail.com)
+   Copyright (C) 2024 Reini Urban (reini.urban@gmail.com)
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation
@@ -55,6 +56,7 @@ using namespace ulib;
 int volatile g_aval_len = 47;
 int volatile g_aval_times = 5000;
 float volatile g_time_r = 1;
+#define BUF_SIZE 32
 
 class hashgen {
 public:
@@ -64,6 +66,7 @@ public:
     OP_XSR = 2, // xorshift right
     OP_ROR = 3, // rotate right
     OP_ADD = 4, // add
+    OP_XOR = 5, // xor
     OP_NUM      // number of operations
   };
 
@@ -86,9 +89,9 @@ public:
           uint64_t old = _op->arg;
           _op->update(RAND_NR_NEXT(_u, _v, _w));
           if (!_op->gen->evolve()) {
-            // ULIB_DEBUG("attempt to evolve with arg:%016llx -> %016llx was
-            // cancelled", 	   (unsigned long long)old, (unsigned long
-            // long)_op->arg);
+            ULIB_DEBUG("attempt to evolve with arg:%016llx -> %016llx was "
+                       "cancelled", (unsigned long long)old,
+                       (unsigned long long)_op->arg);
             _op->arg = old;
           } else {
             ULIB_DEBUG("arg optimized: %016llx -> %016llx",
@@ -115,6 +118,7 @@ public:
       case OP_XSL: // limited to 64 bits
       case OP_XSR:
       case OP_ROR:
+      case OP_XOR:
         v = v % 63 + 1;
         break;
       default:
@@ -197,19 +201,31 @@ public:
         new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       _op_seq.push_back(new_op);
       new_op->start();
-      // ULIB_DEBUG("new op with type=%d added", new_op->type);
+#ifndef UNDEBUG
+      char buf[BUF_SIZE];
+      pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+      ULIB_DEBUG("new op %s added", _print_op(it, buf));
+#endif
     } else if (_op_seq.size() < (unsigned)_max_seq) {
       op *new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       uint32_t pos = r1 % (_op_seq.size() + 1);
       _op_seq.insert(_op_seq.begin() + pos, new_op);
       if (!_evolve()) {
-        // ULIB_DEBUG("attempt to add new op with type=%d to pos=%u was
-        // cancelled", new_op->type, pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+        ULIB_DEBUG("attempt to add new op %s to pos=%u was"
+                   "cancelled", _print_op(it, buf), pos);
+#endif
         _op_seq.erase(_op_seq.begin() + pos);
         delete new_op;
       } else {
-        ULIB_DEBUG("new op with type=%d added to pos=%u",
-                   new_op->type, pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+        ULIB_DEBUG("new op %s added to pos=%u",
+                   _print_op(it, buf), pos);
+#endif
         new_op->start();
       }
     }
@@ -225,10 +241,19 @@ public:
       op *tmp = _op_seq[pos];
       _op_seq.erase(_op_seq.begin() + pos);
       if (!_evolve()) {
-        // ULIB_DEBUG("attempt to erase op at pos=%u was cancelled", pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { tmp->type, tmp->arg };
+        ULIB_DEBUG("attempt to erase op %s at pos=%u was cancelled",
+                   _print_op(it, buf), pos);
+#endif
         _op_seq.insert(_op_seq.begin() + pos, tmp);
       } else {
-        ULIB_DEBUG("erased op at pos=%u", pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { tmp->type, tmp->arg };
+        ULIB_DEBUG("erased op %s at pos=%u", _print_op(it, buf), pos);
+#endif
         unlock();
         delete tmp;
         return;
@@ -249,11 +274,20 @@ public:
       _op_seq[pos]->update(rnd ^ rdtsc());
 
       if (!_evolve()) {
-        // ULIB_DEBUG("attempt to mod op at pos=%u was cancelled", pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { _op_seq[pos]->type, _op_seq[pos]->arg };
+        ULIB_DEBUG("attempt to mod op %s at pos=%u was cancelled",
+                   _print_op(it, buf), pos);
+#endif
         _op_seq[pos]->type = old_type;
         _op_seq[pos]->arg = old_arg;
       } else {
-        ULIB_DEBUG("modified op at pos=%u", pos);
+#ifndef UNDEBUG
+        char buf[BUF_SIZE];
+        pair<op_type, uint64_t> it = { _op_seq[pos]->type, _op_seq[pos]->arg };
+        ULIB_DEBUG("modified op %s at pos=%u", _print_op(it, buf), pos);
+#endif
       }
     }
 
@@ -274,8 +308,8 @@ public:
         _op_seq[pos1]->arg = _op_seq[pos2]->arg;
         _op_seq[pos2]->arg = tmp_arg;
         if (!_evolve()) {
-          // ULIB_DEBUG("attempt to swap pos1=%u and pos2=%u was cancelled",
-          //	   pos1, pos2);
+          ULIB_DEBUG("attempt to swap pos1=%u and pos2=%u was cancelled",
+                     pos1, pos2);
           tmp_type = _op_seq[pos1]->type;
           tmp_arg = _op_seq[pos1]->arg;
           _op_seq[pos1]->type = _op_seq[pos2]->type;
@@ -418,6 +452,9 @@ private:
       case OP_ADD:
         init += (*it)->arg;
         break;
+      case OP_XOR:
+        init ^= (*it)->arg;
+        break;
       case OP_XSL:
         init ^= init << (*it)->arg;
         break;
@@ -440,17 +477,22 @@ private:
     float time_score;
     bool ret = true;
 
-    timer_start(&timer);
     if (_best_seen_score < 0) {
       // first time
-      _init_with_fasthash();
+      _init_with_latest();
+      // warmup
+      for (int i=0; i<10; i++) {
+        (void)aval(gen_hash, g_aval_len, g_aval_times);
+      }
+      timer_start(&timer);
       _best_seen_score = aval(gen_hash, g_aval_len, g_aval_times);
       time_score = timer_stop(&timer) * g_time_r;
       _best_seen_score += time_score;
       printf(
-          "Updated best seen score: aval_score=%f, time_score=%f, overall=%f\n",
+          "Best seen score: aval_score=%f, time_score=%f, overall=%f\n",
           _best_seen_score - time_score, time_score, _best_seen_score);
     } else {
+      timer_start(&timer);
       float new_score = aval(gen_hash, g_aval_len, g_aval_times);
       time_score = timer_stop(&timer) * g_time_r;
       new_score += time_score;
@@ -468,30 +510,39 @@ private:
     return ret;
   }
 
+  char *_print_op(pair<op_type, uint64_t> it, char *buf) {
+      switch (it.first) {
+      case OP_MUL:
+        snprintf(buf, BUF_SIZE, "MUL(%016llx)", (unsigned long long)it.second);
+        break;
+      case OP_ADD:
+        snprintf(buf, BUF_SIZE, "ADD(%016llx)", (unsigned long long)it.second);
+        break;
+      case OP_XOR:
+        snprintf(buf, BUF_SIZE, "XOR(%u)", (unsigned)it.second);
+        break;
+      case OP_XSL:
+        snprintf(buf, BUF_SIZE, "XSL(%u)", (unsigned)it.second);
+        break;
+      case OP_XSR:
+        snprintf(buf, BUF_SIZE, "XSR(%u)", (unsigned)it.second);
+        break;
+      case OP_ROR:
+        snprintf(buf, BUF_SIZE, "ROR(%u)", (unsigned)it.second);
+        break;
+      default:
+        snprintf(buf, BUF_SIZE, "UNKNOWN");
+      }
+      return buf;
+  }
+  
   void _print_best_seen() {
-    printf("Best seen combination:");
+    printf("Best seen combination: ");
     for (vector<pair<op_type, uint64_t>>::const_iterator it =
              _best_seen.begin();
          it != _best_seen.end(); ++it) {
-      switch (it->first) {
-      case OP_MUL:
-        printf("MUL(%016llx) ", (unsigned long long)it->second);
-        break;
-      case OP_ADD:
-        printf("ADD(%016llx) ", (unsigned long long)it->second);
-        break;
-      case OP_XSL:
-        printf("XSL(%u) ", (unsigned)it->second);
-        break;
-      case OP_XSR:
-        printf("XSR(%u) ", (unsigned)it->second);
-        break;
-      case OP_ROR:
-        printf("ROR(%u) ", (unsigned)it->second);
-        break;
-      default:
-        printf("UNKNOWN ");
-      }
+      char buf[BUF_SIZE];
+      printf("%s ", _print_op(*it, buf));
     }
     printf("\t%f\n", _best_seen_score);
   }
@@ -499,16 +550,23 @@ private:
 
   // start with a good baseline, what Zilong Tan computed as best in 2012.
   // and then get at least 2x as good.
-  void _init_with_fasthash() {
+  void _init_with_latest() {
     _best_seen.clear();
     _op_seq.clear();
     
     pair<op_type, uint64_t> ts[] = {
+#ifdef START_WITH_FASTHASH
 	    {OP_XSR, 23},
 	    {OP_MUL, 0x2127599bf4325c37ULL},
 	    {OP_XSR, 47},
+#else
+	    {OP_ROR, 48}, // or 18
+	    {OP_ROR, 40}, //    38
+	    {OP_MUL, 0x2127599bf4325c37ULL},
+	    {OP_XSR, 34},
+#endif
     };
-    for (int i = 0; i < 3; i++) {
+    for (unsigned i = 0; i < sizeof(ts)/sizeof(*ts); i++) {
       auto t = ts[i];
       op *new_op = new op(t.first, hashgen::instance);
       new_op->arg = t.second;
@@ -727,6 +785,15 @@ int cmd_standard(int, const char **) {
   tscore = timer_stop(&timer) * g_time_r;
   printf("XXHash     : aval_score=%f, time_score=%f, overall=%f\n", ascore,
          tscore, ascore + tscore);
+
+  /*
+  _init_with_latest();
+  timer_start(&timer);
+  ascore = aval(gen_hash, g_aval_len, g_aval_times);
+  tscore = timer_stop(&timer) * g_time_r;
+  printf("genhash     : aval_score=%f, time_score=%f, overall=%f\n", ascore,
+         tscore, ascore + tscore);
+  */
 
   return 0;
 }
