@@ -20,7 +20,8 @@ avalanche: avalanche.o aval_main.o xxhash.c
 	$(CXX) $(CXXFLAGS) avalanche.o ../fasthash.c aval_main.o xxhash.c -o avalanche $(LDFLAGS)
 
 hashgen: hashgen.o xxhash.c
-	$(CXX) $(CXXFLAGS) avalanche.o hashgen.o ../fasthash.c xxhash.c -o hashgen $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) avalanche.o bias.o hashgen.o \
+          ../fasthash.c xxhash.c -o hashgen $(LDFLAGS)
 
 magic: magic.o
 	$(CXX) $(CXXFLAGS) magic.o -o magic $(LDFLAGS)

@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "avalanche.h"
+#include "bias.h"
 #include "../fasthash.h"
 #include "xxhash.h"
 #include <assert.h>
@@ -62,6 +63,8 @@ using namespace ulib;
 
 int volatile g_aval_len = 47;
 int volatile g_aval_times = 5000;
+int volatile g_bias_len = 47;
+int volatile g_bias_times = 5000;
 float volatile g_time_r = 1;
 #define BUF_SIZE 32
 
@@ -594,8 +597,9 @@ private:
 
   bool _evolve() {
     avalanche aval;
+    bias cbias;
     timespec timer;
-    float time_score;
+    float aval_score, bias_score, time_score;
     bool ret = true;
 
     if (unlikely(_best_seen_score < 0)) {
@@ -604,25 +608,28 @@ private:
       // warmup
       for (int i = 0; i < 10; i++) {
         (void)aval(gen_hash, g_aval_len, g_aval_times);
+        (void)cbias(gen_hash, g_bias_len, g_bias_times);
       }
       timer_start(&timer);
-      _best_seen_score = aval(gen_hash, g_aval_len, g_aval_times);
+      aval_score = aval(gen_hash, g_aval_len, g_aval_times);
+      bias_score = cbias(gen_hash, g_bias_len, g_bias_times);
       time_score = timer_stop(&timer) * g_time_r;
-      _best_seen_score += time_score;
-      printf("Best seen score: aval_score=%f, time_score=%f, overall=%f\n",
-             _best_seen_score - time_score, time_score, _best_seen_score);
+      _best_seen_score = aval_score + bias_score + time_score;
+      printf("Best seen score: avalanche=%f, bias=%f, time=%f, overall=%f\n",
+             aval_score, bias_score, time_score, _best_seen_score);
     } else {
       timer_start(&timer);
-      float new_score = aval(gen_hash, g_aval_len, g_aval_times);
+      aval_score = aval(gen_hash, g_aval_len, g_aval_times);
+      bias_score = bias(gen_hash, g_bias_len, g_bias_times);
       time_score = timer_stop(&timer) * g_time_r;
-      new_score += time_score;
+      float new_score = aval_score + bias_score + time_score;
       if (new_score < _best_seen_score) {
         // new score is better
         _update_best_seen();
         _best_seen_score = new_score;
-        printf("Updated best seen score: aval_score=%f, time_score=%f, "
+        printf("Updated best seen score: avalanche=%f, bias=%f, time=%f, "
                "overall=%f\n",
-               _best_seen_score - time_score, time_score, _best_seen_score);
+             aval_score, bias_score, time_score, _best_seen_score);
       } else
         ret = false;
     }
@@ -843,6 +850,13 @@ int cmd_aval_rate(int argc, const char *argv[]) {
   return 0;
 }
 
+int cmd_bias_rate(int argc, const char *argv[]) {
+  if (argc > 1)
+    g_bias_r = atof(argv[1]);
+  printf("%f\n", g_bias_r);
+  return 0;
+}
+
 int cmd_indep_rate(int argc, const char *argv[]) {
   if (argc > 1)
     g_indep_r = atof(argv[1]);
@@ -868,6 +882,20 @@ int cmd_aval_times(int argc, const char *argv[]) {
   if (argc > 1)
     g_aval_times = atoi(argv[1]);
   printf("%d\n", g_aval_times);
+  return 0;
+}
+
+int cmd_bias_byte(int argc, const char *argv[]) {
+  if (argc > 1)
+    g_aval_len = atoi(argv[1]);
+  printf("%d\n", g_bias_len);
+  return 0;
+}
+
+int cmd_bias_times(int argc, const char *argv[]) {
+  if (argc > 1)
+    g_bias_times = atoi(argv[1]);
+  printf("%d\n", g_bias_times);
   return 0;
 }
 
@@ -923,25 +951,28 @@ static uint64_t fasthash64_noseed(const void *buf, size_t len) {
 int cmd_standard(int, const char **) {
   avalanche aval;
   timespec timer;
-  float ascore, tscore;
+  float ascore, bscore, tscore;
 
   timer_start(&timer);
   ascore = aval(hash_jenkins_noseed, g_aval_len, g_aval_times);
+  bscore = bias(hash_jenkins_noseed, g_bias_len, g_bias_times);
   tscore = timer_stop(&timer) * g_time_r;
-  printf("JenkinsHash: aval_score=%f, time_score=%f, overall=%f\n", ascore,
-         tscore, ascore + tscore);
+  printf("JenkinsHash: avalanche=%f, bias=%f, time=%f, overall=%f\n", ascore,
+         bscore, tscore, ascore + bscore + tscore);
 
   timer_start(&timer);
   ascore = aval(hash_xxhash_noseed, g_aval_len, g_aval_times);
+  bscore = bias(hash_xxhash_noseed, g_bias_len, g_bias_times);
   tscore = timer_stop(&timer) * g_time_r;
-  printf("XXHash     : aval_score=%f, time_score=%f, overall=%f\n", ascore,
-         tscore, ascore + tscore);
+  printf("XXHash     : avalanche=%f, bias=%f, time=%f, overall=%f\n", ascore,
+         bscore, tscore, ascore + bscore + tscore);
 
   timer_start(&timer);
   ascore = aval(fasthash64_noseed, g_aval_len, g_aval_times);
+  bscore = bias(fasthash64_noseed, g_bias_len, g_bias_times);
   tscore = timer_stop(&timer) * g_time_r;
-  printf("fasthash64 : aval_score=%f, time_score=%f, overall=%f\n", ascore,
-         tscore, ascore + tscore);
+  printf("fasthash   : avalanche=%f, bias=%f, time=%f, overall=%f\n", ascore,
+         bscore, tscore, ascore + bscore + tscore);
 
   return 0;
 }
@@ -980,10 +1011,13 @@ int main(int argc, const char *argv[]) {
     assert(console_init(&con) == 0);
     assert(console_bind(&con, "start", cmd_start) == 0);
     assert(console_bind(&con, "aval_rate", cmd_aval_rate) == 0);
+    assert(console_bind(&con, "bias_rate", cmd_bias_rate) == 0);
     assert(console_bind(&con, "indep_rate", cmd_indep_rate) == 0);
     assert(console_bind(&con, "time_rate", cmd_time_rate) == 0);
     assert(console_bind(&con, "aval_byte", cmd_aval_byte) == 0);
     assert(console_bind(&con, "aval_times", cmd_aval_times) == 0);
+    assert(console_bind(&con, "bias_byte", cmd_bias_byte) == 0);
+    assert(console_bind(&con, "bias_times", cmd_bias_times) == 0);
     assert(console_bind(&con, "min_seq", cmd_min_seq) == 0);
     assert(console_bind(&con, "max_seq", cmd_max_seq) == 0);
     assert(console_bind(&con, "best_seen", cmd_best_seen) == 0);
