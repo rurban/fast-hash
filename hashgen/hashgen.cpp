@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "avalanche.h"
+#include "../fasthash.h"
 #include "xxhash.h"
 #include <assert.h>
 #include <pthread.h>
@@ -867,6 +868,10 @@ static uint64_t hash_jenkins_noseed(const void *buf, size_t len) {
   return hash;
 }
 
+static uint64_t fasthash64_noseed(const void *buf, size_t len) {
+  return fasthash64(buf, len, 0);
+}
+
 int cmd_standard(int, const char **) {
   avalanche aval;
   timespec timer;
@@ -884,14 +889,11 @@ int cmd_standard(int, const char **) {
   printf("XXHash     : aval_score=%f, time_score=%f, overall=%f\n", ascore,
          tscore, ascore + tscore);
 
-  /*
-  _init_with_latest();
   timer_start(&timer);
-  ascore = aval(gen_hash, g_aval_len, g_aval_times);
+  ascore = aval(fasthash64_noseed, g_aval_len, g_aval_times);
   tscore = timer_stop(&timer) * g_time_r;
-  printf("genhash     : aval_score=%f, time_score=%f, overall=%f\n", ascore,
+  printf("fasthash64 : aval_score=%f, time_score=%f, overall=%f\n", ascore,
          tscore, ascore + tscore);
-  */
 
   return 0;
 }

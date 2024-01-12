@@ -149,7 +149,7 @@ static inline int hweight15(uint16_t a)
  */
 static inline int hweight32(uint32_t a)
 {
-	register uint32_t t;
+	uint32_t t;
 	
 	t = a - ((a >> 1) & 033333333333)
 		- ((a >> 2) & 011111111111);
