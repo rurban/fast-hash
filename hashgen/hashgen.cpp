@@ -250,21 +250,22 @@ public:
     } else if (_op_seq.size() < (unsigned)_max_seq) {
       op *new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       uint32_t pos = r1 % (_op_seq.size() + 1);
-      vector<op *>::iterator it = _op_seq.begin() + pos;
-      while (!adjacent(new_op->type, (*it)->type)) {
+      op *next_op = pos < _op_seq.size() ? _op_seq[pos] : _op_seq[0];
+      while (!adjacent(new_op->type, next_op->type)) {
 #ifndef UNDEBUG
         char buf1[BUF_SIZE];
         char buf2[BUF_SIZE];
         pair<op_type, uint64_t> p1 = {new_op->type, new_op->arg};
-        pair<op_type, uint64_t> p2 = {(*it)->type, (*it)->arg};
+        pair<op_type, uint64_t> p2 = {next_op->type, next_op->arg};
         ULIB_DEBUG("new op %s adjacent to %s cancelled", _print_op(p1, buf1),
                    _print_op(p2, buf2));
 #endif
         new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
         pos = r1 % (_op_seq.size() + 1);
-        it = _op_seq.begin() + pos;
+        next_op = pos < _op_seq.size() ? _op_seq[pos] : _op_seq[0];
       }
       // before
+      vector<op *>::iterator it = _op_seq.begin() + pos;
       _op_seq.insert(it, new_op);
       if (!_evolve()) {
 #ifndef UNDEBUG
