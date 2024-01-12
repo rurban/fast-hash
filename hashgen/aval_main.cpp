@@ -26,12 +26,17 @@
 // avalanche driver
 
 #include "../fasthash.h"
+#include "../fasthash1.h"
 #include "avalanche.h"
 #include "xxhash.h"
 #include <ulib/hash.h>
 
 static uint64_t fasthash64_noseed(const void *buf, size_t len) {
   return fasthash64(buf, len, 0);
+}
+
+static uint64_t fasthash1_64_noseed(const void *buf, size_t len) {
+  return fasthash1_64(buf, len, 0);
 }
 
 static uint64_t hash_jenkins_noseed(const void *buf, size_t len) {
@@ -50,15 +55,18 @@ static uint64_t hash_xxhash_noseed(const void *buf, size_t len) {
 
 int main() {
   avalanche aval;
+  printf("Lower is better\n");
   // 3.747583
   printf("Overall quality of jenkinshash : %f\n",
          aval(hash_jenkins_noseed, 49, 5000));
-  // 2.272378
-  printf("Overall quality of fasthash    : %f\n",
-         aval(fasthash64_noseed, 49, 5000));
   // 3.463349
   printf("Overall quality of xxhash      : %f\n",
          aval(hash_xxhash_noseed, 49, 5000));
+  // 2.272378
+  printf("Overall quality of fasthash    : %f\n",
+         aval(fasthash64_noseed, 49, 5000));
+  printf("Overall quality of fasthash1   : %f\n",
+         aval(fasthash1_64_noseed, 49, 5000));
 
   return 0;
 }
