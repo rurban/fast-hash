@@ -64,6 +64,7 @@ float volatile g_time_r = 1;
 class hashgen {
 public:
   enum op_type {
+    // | and & are not-reversible. mul by even neither.
     OP_MUL = 0, // multiplication
     OP_XSL = 1, // xorshift left
     OP_XSR = 2, // xorshift right
@@ -115,7 +116,7 @@ public:
 	if (!v)
 	  v |= 1;
 	break;
-      case OP_MUL: // by 0,2,4 is a XSL
+      case OP_MUL: // by 0,2,4 is a XSL, must be uneven to be reversible.
         v |= 1;
 	break;
       case OP_XSL: // limited to 64 bits
@@ -150,7 +151,7 @@ public:
   };
 
   hashgen()
-    : _min_seq(2), _max_seq(5), // murmur has 5
+    : _min_seq(2), _max_seq(6), // murmur has 5, rrmxmx has 6
       _best_seen_score(-1) // negative value for uninitialized
   {
     pthread_mutex_init(&_mutex, NULL);
