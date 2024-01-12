@@ -10,17 +10,17 @@ LDFLAGS  = -L $(ULIB_LIB) -lulib -lm -lrt -lpthread
 
 .PHONY: dep all clean
 
-all: dep avalanche hashgen
+all: dep avalanche hashgen magic
 
 dep/ulib/lib/libulib.a:
 	make -C dep/ulib release
-dep: ../fasthash.o dep/ulib/lib/libulib.a
+dep: ../fasthash.c dep/ulib/lib/libulib.a
 
 avalanche: avalanche.o aval_main.o xxhash.c
-	$(CXX) avalanche.o ../fasthash.o aval_main.o xxhash.c -o avalanche $(LDFLAGS)
+	$(CXX) avalanche.o ../fasthash.c aval_main.o xxhash.c -o avalanche $(LDFLAGS)
 
 hashgen: hashgen.o xxhash.c
-	$(CXX) avalanche.o hashgen.o ../fasthash.o xxhash.c -o hashgen $(LDFLAGS)
+	$(CXX) avalanche.o hashgen.o ../fasthash.c xxhash.c -o hashgen $(LDFLAGS)
 
 magic: magic.o
 	$(CXX) magic.o -o magic $(LDFLAGS)
@@ -28,7 +28,6 @@ magic: magic.o
 clean:
 	rm -rf *.o
 	rm -rf *~
-	rm -rf ../fasthash.o
 	rm -rf avalanche
 	rm -rf hashgen
 	rm -rf magic
