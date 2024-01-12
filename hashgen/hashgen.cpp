@@ -27,6 +27,7 @@
 
 #include <utility>
 #include <vector>
+#include <cstring>
 
 #include "avalanche.h"
 #include "xxhash.h"
@@ -817,30 +818,35 @@ int cmd_help(int, const char **) {
   return 0;
 }
 
-int main() {
+int main(int argc, const char *argv[]) {
   hashgen::instance = new hashgen;
   console_t con;
 
-  printf("Non-cryptographic Hash Function Generator 1.0 alpha\n");
+  printf("Non-cryptographic Hash Function Generator 1.1 alpha\n");
   printf("Zilong Tan (eric.zltan@gmail.com)\n");
-  printf("Type \'help\' for a list of commands; \'exit\' to quit.\n");
 
-  assert(console_init(&con) == 0);
-  assert(console_bind(&con, "start", cmd_start) == 0);
-  assert(console_bind(&con, "aval_rate", cmd_aval_rate) == 0);
-  assert(console_bind(&con, "indep_rate", cmd_indep_rate) == 0);
-  assert(console_bind(&con, "time_rate", cmd_time_rate) == 0);
-  assert(console_bind(&con, "aval_byte", cmd_aval_byte) == 0);
-  assert(console_bind(&con, "aval_times", cmd_aval_times) == 0);
-  assert(console_bind(&con, "min_seq", cmd_min_seq) == 0);
-  assert(console_bind(&con, "max_seq", cmd_max_seq) == 0);
-  assert(console_bind(&con, "best_seen", cmd_best_seen) == 0);
-  assert(console_bind(&con, "std", cmd_standard) == 0);
-  assert(console_bind(&con, "help", cmd_help) == 0);
-  console_loop(&con, -1, "exit");
-  console_destroy(&con);
-
-  printf("\nExiting Now ...\n\n");
+  if (argc == 2 && !strcmp(argv[1],"start")) {
+    cmd_standard(argc, argv);
+    cmd_start(argc, argv);
+  }
+  else {
+    printf("Type \'help\' for a list of commands; \'exit\' to quit.\n");
+    assert(console_init(&con) == 0);
+    assert(console_bind(&con, "start", cmd_start) == 0);
+    assert(console_bind(&con, "aval_rate", cmd_aval_rate) == 0);
+    assert(console_bind(&con, "indep_rate", cmd_indep_rate) == 0);
+    assert(console_bind(&con, "time_rate", cmd_time_rate) == 0);
+    assert(console_bind(&con, "aval_byte", cmd_aval_byte) == 0);
+    assert(console_bind(&con, "aval_times", cmd_aval_times) == 0);
+    assert(console_bind(&con, "min_seq", cmd_min_seq) == 0);
+    assert(console_bind(&con, "max_seq", cmd_max_seq) == 0);
+    assert(console_bind(&con, "best_seen", cmd_best_seen) == 0);
+    assert(console_bind(&con, "std", cmd_standard) == 0);
+    assert(console_bind(&con, "help", cmd_help) == 0);
+    console_loop(&con, -1, "exit");
+    console_destroy(&con);
+    printf("\nExiting Now ...\n\n");
+  }
 
   delete hashgen::instance;
 
