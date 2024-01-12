@@ -25,9 +25,9 @@
    SOFTWARE.
 */
 
+#include <cstring>
 #include <utility>
 #include <vector>
-#include <cstring>
 
 #include "avalanche.h"
 #include "xxhash.h"
@@ -44,7 +44,7 @@
 #include <ulib/thread.h>
 #include <ulib/timer.h>
 
-#define unlikely(x)     __builtin_expect(!!(x), 0)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 // Feistel structure round
 #define FS_ROUND(a, b, F)                                                      \
@@ -72,14 +72,14 @@ public:
     OP_XSR = 2, // xorshift right
     OP_ROR = 3, // rotate right
     // worse ops:
-    OP_ADD = 4, // add
-    OP_XOR = 5, // xor
-    OP_NOT = 6, // ~
-    OP_ASL = 7, // addshift left
-    OP_SSL = 8, // subshift left
-    OP_SUB = 9, // sub
-    OP_LOR = 10,// rotate left
-    OP_NUM      // number of operations
+    OP_ADD = 4,  // add
+    OP_XOR = 5,  // xor
+    OP_NOT = 6,  // ~
+    OP_ASL = 7,  // addshift left
+    OP_SSL = 8,  // subshift left
+    OP_SUB = 9,  // sub
+    OP_LOR = 10, // rotate left
+    OP_NUM       // number of operations
   };
 
   struct op {
@@ -102,8 +102,8 @@ public:
           _op->update(RAND_NR_NEXT(_u, _v, _w));
           if (!_op->gen->evolve()) {
             ULIB_DEBUG("attempt to evolve with arg:%016llx -> %016llx was "
-                       "cancelled", (unsigned long long)old,
-                       (unsigned long long)_op->arg);
+                       "cancelled",
+                       (unsigned long long)old, (unsigned long long)_op->arg);
             _op->arg = old;
           } else {
             ULIB_DEBUG("arg optimized: %016llx -> %016llx",
@@ -122,12 +122,12 @@ public:
       switch (type) {
       case OP_ADD: // by 0 makes not much sense
       case OP_SUB:
-	if (!v)
-	  v |= 1;
-	break;
+        if (!v)
+          v |= 1;
+        break;
       case OP_MUL: // by 0,2,4 is a XSL, must be uneven to be reversible.
         v |= 1;
-	break;
+        break;
       case OP_XSL: // limited to 64 bits
       case OP_XSR:
       case OP_ROR:
@@ -165,8 +165,8 @@ public:
   };
 
   hashgen()
-    : _min_seq(2), _max_seq(6), // murmur has 5, rrmxmx has 6
-      _best_seen_score(-1)      // negative value for uninitialized
+      : _min_seq(2), _max_seq(6), // murmur has 5, rrmxmx has 6
+        _best_seen_score(-1)      // negative value for uninitialized
   {
     pthread_mutex_init(&_mutex, NULL);
     ctrl_add_op = new thread_add_op(this);
@@ -216,15 +216,17 @@ public:
     case OP_SUB:
     case OP_XOR:
     case OP_ROR:
-    case OP_MUL: return a != b;
+    case OP_MUL:
+      return a != b;
     case OP_XSL:
     case OP_XSR:
     case OP_ASL:
-    case OP_SSL: return 1;
+    case OP_SSL:
+      return 1;
     case OP_NUM:
       ULIB_FATAL("unknown op_type: %d", a);
-      return 0;
     }
+    return 0;
   }
 
   void add_op(uint64_t rnd) {
@@ -241,7 +243,7 @@ public:
       new_op->start();
 #ifndef UNDEBUG
       char buf[BUF_SIZE];
-      pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+      pair<op_type, uint64_t> it = {new_op->type, new_op->arg};
       ULIB_DEBUG("new op %s added", _print_op(it, buf));
 #endif
     } else if (_op_seq.size() < (unsigned)_max_seq) {
@@ -252,8 +254,8 @@ public:
 #ifndef UNDEBUG
         char buf1[BUF_SIZE];
         char buf2[BUF_SIZE];
-        pair<op_type, uint64_t> p1 = { new_op->type, new_op->arg };
-        pair<op_type, uint64_t> p2 = { (*it)->type, (*it)->arg };
+        pair<op_type, uint64_t> p1 = {new_op->type, new_op->arg};
+        pair<op_type, uint64_t> p2 = {(*it)->type, (*it)->arg};
         ULIB_DEBUG("new op %s adjacent to %s cancelled", _print_op(p1, buf1),
                    _print_op(p2, buf2));
 #endif
@@ -266,18 +268,18 @@ public:
       if (!_evolve()) {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> p = { new_op->type, new_op->arg };
+        pair<op_type, uint64_t> p = {new_op->type, new_op->arg};
         ULIB_DEBUG("attempt to add new op %s to pos=%u was"
-                   "cancelled", _print_op(p, buf), pos);
+                   "cancelled",
+                   _print_op(p, buf), pos);
 #endif
         _op_seq.erase(it);
         delete new_op;
       } else {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> p = { new_op->type, new_op->arg };
-        ULIB_DEBUG("new op %s added to pos=%u",
-                   _print_op(p, buf), pos);
+        pair<op_type, uint64_t> p = {new_op->type, new_op->arg};
+        ULIB_DEBUG("new op %s added to pos=%u", _print_op(p, buf), pos);
 #endif
         new_op->start();
       }
@@ -297,8 +299,8 @@ public:
 #ifndef UNDEBUG
         char buf1[BUF_SIZE];
         char buf2[BUF_SIZE];
-        pair<op_type, uint64_t> p1 = { tmp->type, tmp->arg };
-        pair<op_type, uint64_t> p2 = { tmp1->type, tmp1->arg };
+        pair<op_type, uint64_t> p1 = {tmp->type, tmp->arg};
+        pair<op_type, uint64_t> p2 = {tmp1->type, tmp1->arg};
         ULIB_DEBUG("new op %s adjacent to %s cancelled", _print_op(p1, buf1),
                    _print_op(p2, buf2));
 #endif
@@ -309,7 +311,7 @@ public:
       if (!_evolve()) {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { tmp->type, tmp->arg };
+        pair<op_type, uint64_t> it = {tmp->type, tmp->arg};
         ULIB_DEBUG("attempt to erase op %s at pos=%u was cancelled",
                    _print_op(it, buf), pos);
 #endif
@@ -317,7 +319,7 @@ public:
       } else {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { tmp->type, tmp->arg };
+        pair<op_type, uint64_t> it = {tmp->type, tmp->arg};
         ULIB_DEBUG("erased op %s at pos=%u", _print_op(it, buf), pos);
 #endif
         unlock();
@@ -342,7 +344,7 @@ public:
       if (!_evolve()) {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { _op_seq[pos]->type, _op_seq[pos]->arg };
+        pair<op_type, uint64_t> it = {_op_seq[pos]->type, _op_seq[pos]->arg};
         ULIB_DEBUG("attempt to mod op %s at pos=%u was cancelled",
                    _print_op(it, buf), pos);
 #endif
@@ -351,7 +353,7 @@ public:
       } else {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { _op_seq[pos]->type, _op_seq[pos]->arg };
+        pair<op_type, uint64_t> it = {_op_seq[pos]->type, _op_seq[pos]->arg};
         ULIB_DEBUG("modified op %s at pos=%u", _print_op(it, buf), pos);
 #endif
       }
@@ -374,8 +376,8 @@ public:
         _op_seq[pos1]->arg = _op_seq[pos2]->arg;
         _op_seq[pos2]->arg = tmp_arg;
         if (!_evolve()) {
-          ULIB_DEBUG("attempt to swap pos1=%u and pos2=%u was cancelled",
-                     pos1, pos2);
+          ULIB_DEBUG("attempt to swap pos1=%u and pos2=%u was cancelled", pos1,
+                     pos2);
           tmp_type = _op_seq[pos1]->type;
           tmp_arg = _op_seq[pos1]->arg;
           _op_seq[pos1]->type = _op_seq[pos2]->type;
@@ -564,16 +566,15 @@ private:
       // first time
       _init_with_latest();
       // warmup
-      for (int i=0; i<10; i++) {
+      for (int i = 0; i < 10; i++) {
         (void)aval(gen_hash, g_aval_len, g_aval_times);
       }
       timer_start(&timer);
       _best_seen_score = aval(gen_hash, g_aval_len, g_aval_times);
       time_score = timer_stop(&timer) * g_time_r;
       _best_seen_score += time_score;
-      printf(
-          "Best seen score: aval_score=%f, time_score=%f, overall=%f\n",
-          _best_seen_score - time_score, time_score, _best_seen_score);
+      printf("Best seen score: aval_score=%f, time_score=%f, overall=%f\n",
+             _best_seen_score - time_score, time_score, _best_seen_score);
     } else {
       timer_start(&timer);
       float new_score = aval(gen_hash, g_aval_len, g_aval_times);
@@ -594,46 +595,46 @@ private:
   }
 
   char *_print_op(pair<op_type, uint64_t> it, char *buf) {
-      switch (it.first) {
-      case OP_MUL:
-        snprintf(buf, BUF_SIZE, "MUL(%016llx)", (unsigned long long)it.second);
-        break;
-      case OP_XSL:
-        snprintf(buf, BUF_SIZE, "XSL(%u)", (unsigned)it.second);
-        break;
-      case OP_XSR:
-        snprintf(buf, BUF_SIZE, "XSR(%u)", (unsigned)it.second);
-        break;
-      case OP_ROR:
-        snprintf(buf, BUF_SIZE, "ROR(%u)", (unsigned)it.second);
-        break;
-      case OP_ADD:
-        snprintf(buf, BUF_SIZE, "ADD(%016llx)", (unsigned long long)it.second);
-        break;
-      case OP_XOR:
-        snprintf(buf, BUF_SIZE, "XOR(%u)", (unsigned)it.second);
-        break;
-      case OP_NOT:
-        snprintf(buf, BUF_SIZE, "NOT");
-        break;
-      case OP_ASL:
-        snprintf(buf, BUF_SIZE, "ASL(%u)", (unsigned)it.second);
-        break;
-      case OP_SSL:
-        snprintf(buf, BUF_SIZE, "SSL(%u)", (unsigned)it.second);
-        break;
-      case OP_SUB:
-        snprintf(buf, BUF_SIZE, "SUB(%u)", (unsigned)it.second);
-        break;
-      case OP_LOR:
-        snprintf(buf, BUF_SIZE, "LOR(%u)", (unsigned)it.second);
-        break;
-      case OP_NUM:
-        snprintf(buf, BUF_SIZE, "UNKNOWN");
-      }
-      return buf;
+    switch (it.first) {
+    case OP_MUL:
+      snprintf(buf, BUF_SIZE, "MUL(%016llx)", (unsigned long long)it.second);
+      break;
+    case OP_XSL:
+      snprintf(buf, BUF_SIZE, "XSL(%u)", (unsigned)it.second);
+      break;
+    case OP_XSR:
+      snprintf(buf, BUF_SIZE, "XSR(%u)", (unsigned)it.second);
+      break;
+    case OP_ROR:
+      snprintf(buf, BUF_SIZE, "ROR(%u)", (unsigned)it.second);
+      break;
+    case OP_ADD:
+      snprintf(buf, BUF_SIZE, "ADD(%016llx)", (unsigned long long)it.second);
+      break;
+    case OP_XOR:
+      snprintf(buf, BUF_SIZE, "XOR(%u)", (unsigned)it.second);
+      break;
+    case OP_NOT:
+      snprintf(buf, BUF_SIZE, "NOT");
+      break;
+    case OP_ASL:
+      snprintf(buf, BUF_SIZE, "ASL(%u)", (unsigned)it.second);
+      break;
+    case OP_SSL:
+      snprintf(buf, BUF_SIZE, "SSL(%u)", (unsigned)it.second);
+      break;
+    case OP_SUB:
+      snprintf(buf, BUF_SIZE, "SUB(%u)", (unsigned)it.second);
+      break;
+    case OP_LOR:
+      snprintf(buf, BUF_SIZE, "LOR(%u)", (unsigned)it.second);
+      break;
+    case OP_NUM:
+      snprintf(buf, BUF_SIZE, "UNKNOWN");
+    }
+    return buf;
   }
-  
+
   void _print_best_seen() {
     printf("Best seen combination: ");
     for (vector<pair<op_type, uint64_t>>::const_iterator it =
@@ -645,26 +646,25 @@ private:
     printf("\t%f\n", _best_seen_score);
   }
 
-
   // start with a good baseline, what Zilong Tan computed as best in 2012.
   // and then get at least 2x as good.
   void _init_with_latest() {
     _best_seen.clear();
     _op_seq.clear();
-    
+
     pair<op_type, uint64_t> ts[] = {
 #ifdef START_WITH_FASTHASH
-	    {OP_XSR, 23},
-	    {OP_MUL, 0x2127599bf4325c37ULL},
-	    {OP_XSR, 47},
+        {OP_XSR, 23},
+        {OP_MUL, 0x2127599bf4325c37ULL},
+        {OP_XSR, 47},
 #else
-	    {OP_ROR, 48}, // or 18
-	    {OP_ROR, 40}, //    38
-	    {OP_MUL, 0x2127599bf4325c37ULL},
-	    {OP_XSR, 34},
+        {OP_ROR, 48}, // or 18
+        {OP_ROR, 40}, //    38
+        {OP_MUL, 0x2127599bf4325c37ULL},
+        {OP_XSR, 34},
 #endif
     };
-    for (unsigned i = 0; i < sizeof(ts)/sizeof(*ts); i++) {
+    for (unsigned i = 0; i < sizeof(ts) / sizeof(*ts); i++) {
       auto t = ts[i];
       op *new_op = new op(t.first, hashgen::instance);
       new_op->arg = t.second;
@@ -925,8 +925,7 @@ int main(int argc, const char *argv[]) {
   if (argc == 2 && !strcmp(argv[1], "start")) {
     cmd_standard(argc, argv);
     cmd_start(argc, argv);
-  }
-  else {
+  } else {
     printf("Type \'help\' for a list of commands; \'exit\' to quit.\n");
     assert(console_init(&con) == 0);
     assert(console_bind(&con, "start", cmd_start) == 0);
