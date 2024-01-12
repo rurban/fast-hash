@@ -139,7 +139,7 @@ public:
         break;
       case OP_NOT:
         break;
-      default:
+      case OP_NUM:
         ULIB_FATAL("unknown op_type: %d", type);
       }
       arg = v;
@@ -166,7 +166,7 @@ public:
 
   hashgen()
     : _min_seq(2), _max_seq(6), // murmur has 5, rrmxmx has 6
-      _best_seen_score(-1) // negative value for uninitialized
+      _best_seen_score(-1)      // negative value for uninitialized
   {
     pthread_mutex_init(&_mutex, NULL);
     ctrl_add_op = new thread_add_op(this);
@@ -207,6 +207,26 @@ public:
 
   void set_max_seq(int max) { _max_seq = max; }
 
+  // may these ops be adjacent?
+  int adjacent(enum op_type a, enum op_type b) {
+    switch (a) {
+    case OP_LOR:
+    case OP_NOT:
+    case OP_ADD:
+    case OP_SUB:
+    case OP_XOR:
+    case OP_ROR:
+    case OP_MUL: return a != b;
+    case OP_XSL:
+    case OP_XSR:
+    case OP_ASL:
+    case OP_SSL: return 1;
+    case OP_NUM:
+      ULIB_FATAL("unknown op_type: %d", a);
+      return 0;
+    }
+  }
+
   void add_op(uint64_t rnd) {
     uint32_t r1 = (uint32_t)(rnd >> 32);
     uint32_t r2 = (uint32_t)rnd;
@@ -227,22 +247,37 @@ public:
     } else if (_op_seq.size() < (unsigned)_max_seq) {
       op *new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
       uint32_t pos = r1 % (_op_seq.size() + 1);
-      _op_seq.insert(_op_seq.begin() + pos, new_op);
+      vector<op *>::iterator it = _op_seq.begin() + pos;
+      while (!adjacent(new_op->type, (*it)->type)) {
+#ifndef UNDEBUG
+        char buf1[BUF_SIZE];
+        char buf2[BUF_SIZE];
+        pair<op_type, uint64_t> p1 = { new_op->type, new_op->arg };
+        pair<op_type, uint64_t> p2 = { (*it)->type, (*it)->arg };
+        ULIB_DEBUG("new op %s adjacent to %s cancelled", _print_op(p1, buf1),
+                   _print_op(p2, buf2));
+#endif
+        new_op = new op((op_type)(r2 % (uint32_t)OP_NUM), this);
+        pos = r1 % (_op_seq.size() + 1);
+        it = _op_seq.begin() + pos;
+      }
+      // before
+      _op_seq.insert(it, new_op);
       if (!_evolve()) {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+        pair<op_type, uint64_t> p = { new_op->type, new_op->arg };
         ULIB_DEBUG("attempt to add new op %s to pos=%u was"
-                   "cancelled", _print_op(it, buf), pos);
+                   "cancelled", _print_op(p, buf), pos);
 #endif
-        _op_seq.erase(_op_seq.begin() + pos);
+        _op_seq.erase(it);
         delete new_op;
       } else {
 #ifndef UNDEBUG
         char buf[BUF_SIZE];
-        pair<op_type, uint64_t> it = { new_op->type, new_op->arg };
+        pair<op_type, uint64_t> p = { new_op->type, new_op->arg };
         ULIB_DEBUG("new op %s added to pos=%u",
-                   _print_op(it, buf), pos);
+                   _print_op(p, buf), pos);
 #endif
         new_op->start();
       }
@@ -257,6 +292,19 @@ public:
     if (_op_seq.size() > (unsigned)_max_seq) {
       uint32_t pos = rnd % _op_seq.size();
       op *tmp = _op_seq[pos];
+      op *tmp1 = pos < _op_seq.size() - 1 ? _op_seq[pos + 1] : _op_seq[0];
+      while (!adjacent(tmp->type, tmp1->type)) {
+#ifndef UNDEBUG
+        char buf1[BUF_SIZE];
+        char buf2[BUF_SIZE];
+        pair<op_type, uint64_t> p1 = { tmp->type, tmp->arg };
+        pair<op_type, uint64_t> p2 = { tmp1->type, tmp1->arg };
+        ULIB_DEBUG("new op %s adjacent to %s cancelled", _print_op(p1, buf1),
+                   _print_op(p2, buf2));
+#endif
+        pos = rnd % _op_seq.size();
+        tmp = _op_seq[pos];
+      }
       _op_seq.erase(_op_seq.begin() + pos);
       if (!_evolve()) {
 #ifndef UNDEBUG
@@ -499,7 +547,7 @@ private:
         break;
       // init += ~(init << (*it)->arg)
       // init -= ~(init << (*it)->arg)
-      default:
+      case OP_NUM:
         ULIB_FATAL("unknown op type:%d", (*it)->type);
       }
     }
@@ -550,12 +598,6 @@ private:
       case OP_MUL:
         snprintf(buf, BUF_SIZE, "MUL(%016llx)", (unsigned long long)it.second);
         break;
-      case OP_ADD:
-        snprintf(buf, BUF_SIZE, "ADD(%016llx)", (unsigned long long)it.second);
-        break;
-      case OP_XOR:
-        snprintf(buf, BUF_SIZE, "XOR(%u)", (unsigned)it.second);
-        break;
       case OP_XSL:
         snprintf(buf, BUF_SIZE, "XSL(%u)", (unsigned)it.second);
         break;
@@ -565,7 +607,28 @@ private:
       case OP_ROR:
         snprintf(buf, BUF_SIZE, "ROR(%u)", (unsigned)it.second);
         break;
-      default:
+      case OP_ADD:
+        snprintf(buf, BUF_SIZE, "ADD(%016llx)", (unsigned long long)it.second);
+        break;
+      case OP_XOR:
+        snprintf(buf, BUF_SIZE, "XOR(%u)", (unsigned)it.second);
+        break;
+      case OP_NOT:
+        snprintf(buf, BUF_SIZE, "NOT");
+        break;
+      case OP_ASL:
+        snprintf(buf, BUF_SIZE, "ASL(%u)", (unsigned)it.second);
+        break;
+      case OP_SSL:
+        snprintf(buf, BUF_SIZE, "SSL(%u)", (unsigned)it.second);
+        break;
+      case OP_SUB:
+        snprintf(buf, BUF_SIZE, "SUB(%u)", (unsigned)it.second);
+        break;
+      case OP_LOR:
+        snprintf(buf, BUF_SIZE, "LOR(%u)", (unsigned)it.second);
+        break;
+      case OP_NUM:
         snprintf(buf, BUF_SIZE, "UNKNOWN");
       }
       return buf;
