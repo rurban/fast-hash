@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <ctime>
 #include <string.h>
 #include <ulib/hash.h>
 #include <ulib/alignhash.h>
