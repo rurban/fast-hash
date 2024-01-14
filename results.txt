@@ -9,3 +9,20 @@ Updated best seen score: aval_score=1.695534, time_score=0.589147, overall=2.284
 
 Best seen combination:ROR(18) ROR(38) MUL(2127599bf4325c37) XSR(34) 	2.523612
 Updated best seen score: aval_score=1.692642, time_score=0.603078, overall=2.295720
+
+$ prospector -8
+// score = 66.115313541871586
+uint64_t
+hash(uint64_t x)
+{
+    x *= 0xe4adbc73edb87283;
+    x ^= x >> 25;
+    x  = ~x;
+    x  = __builtin_bswap64(x);
+    x *= 0x9743d1e18d4481c7;
+    x ^= x >> 30;
+    return x;
+}
+
+Best seen combination: ROR(48) ROR(40) MUL(2127599bf4325c37) XSR(34) 	2.231420
+Updated best seen score: aval_score=1.691164, time_score=0.503440, overall=2.194603

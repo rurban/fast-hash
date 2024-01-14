@@ -76,10 +76,11 @@ public:
     OP_ADD = 4,  // add
     OP_XOR = 5,  // xor
     OP_NOT = 6,  // ~
-    OP_ASL = 7,  // addshift left
-    OP_SSL = 8,  // subshift left
-    OP_SUB = 9,  // sub
-    OP_LOR = 10, // rotate left
+    OP_SWP = 7,  // swap
+    OP_ASL = 8,  // addshift left
+    OP_SSL = 9,  // subshift left
+    OP_SUB = 10,  // sub
+    OP_LOR = 11, // rotate left
     OP_NUM       // number of operations
   };
 
@@ -126,7 +127,7 @@ public:
         if (!v)
           v |= 1;
         break;
-      case OP_MUL: // by 0,2,4 is a XSL, must be uneven to be reversible.
+      case OP_MUL: // must be uneven to be reversible.
         v |= 1;
         break;
       case OP_XSL: // limited to 64 bits
@@ -139,6 +140,7 @@ public:
         v = v % 63 + 1;
         break;
       case OP_NOT:
+      case OP_SWP:
         break;
       case OP_NUM:
         ULIB_FATAL("unknown op_type: %d", type);
@@ -213,6 +215,7 @@ public:
     switch (a) {
     case OP_LOR:
     case OP_NOT:
+    case OP_SWP:
     case OP_ADD:
     case OP_SUB:
     case OP_XOR:
@@ -462,46 +465,47 @@ public:
   }
 
   /*
-          // Feistel Structure Hash Function
-          uint64_t
-          hash_value(const void *buf, size_t len)
-          {
-  //		const uint64_t   m1 = 0xd36463187cc70d7bULL;
-  //		const uint64_t   m2 = 0xb597d0ceca3f6e07ULL;
-                  const uint64_t *pos = (const uint64_t *)buf;
-                  const uint64_t *end = (const uint64_t *)((char *)pos + (len &
-  ~15)); const unsigned char *pc; uint64_t s = len; uint64_t t = len;
+  // Feistel Structure Hash Function
+  uint64_t
+  hash_value(const void *buf, size_t len)
+  {
+    //const uint64_t   m1 = 0xd36463187cc70d7bULL;
+    //const uint64_t   m2 = 0xb597d0ceca3f6e07ULL;
+    const uint64_t *pos = (const uint64_t *)buf;
+    const uint64_t *end = (const uint64_t *)((char *)pos + (len &
+  ~15));
+    const unsigned char *pc; uint64_t s = len; uint64_t t = len;
 
-                  while (pos != end) {
-                          s ^= *pos++;
-                          t ^= *pos++;
-                          FS_ROUND(s, t, _process);
-                  }
+    while (pos != end) {
+      s ^= *pos++;
+      t ^= *pos++;
+      FS_ROUND(s, t, _process);
+    }
+    
+    if (len & 15) {
+      if (len & 8)
+        s ^= *pos++;
 
-                  if (len & 15) {
-                          if (len & 8)
-                                  s ^= *pos++;
+      pc = (const unsigned char*)pos;
 
-                          pc = (const unsigned char*)pos;
+      switch (len & 7) {
+      case 7: t ^= (uint64_t)pc[6] << 48;
+      case 6: t ^= (uint64_t)pc[5] << 40;
+      case 5: t ^= (uint64_t)pc[4] << 32;
+      case 4: t ^= (uint64_t)pc[3] << 24;
+      case 3: t ^= (uint64_t)pc[2] << 16;
+      case 2: t ^= (uint64_t)pc[1] << 8;
+      case 1: t ^= (uint64_t)pc[0];
+      }
 
-                          switch (len & 7) {
-                          case 7: t ^= (uint64_t)pc[6] << 48;
-                          case 6: t ^= (uint64_t)pc[5] << 40;
-                          case 5: t ^= (uint64_t)pc[4] << 32;
-                          case 4: t ^= (uint64_t)pc[3] << 24;
-                          case 3: t ^= (uint64_t)pc[2] << 16;
-                          case 2: t ^= (uint64_t)pc[1] << 8;
-                          case 1: t ^= (uint64_t)pc[0];
-                          }
+      FS_ROUND(s, t, _process);
+    }
 
-                          FS_ROUND(s, t, _process);
-                  }
+    FS_ROUND(s, t, _process);
+    RAND_INT4_MIX64(t);
 
-                  FS_ROUND(s, t, _process);
-                  RAND_INT4_MIX64(t);
-
-                  return t;
-          }
+    return t;
+  }
   */
 
   // global instance of this class, should be unique
@@ -536,6 +540,9 @@ private:
         break;
       case OP_NOT:
         init = ~init;
+        break;
+      case OP_SWP:
+        init = __builtin_bswap64(init);
         break;
       case OP_ASL:
         init += init << (*it)->arg;
@@ -619,6 +626,9 @@ private:
     case OP_NOT:
       snprintf(buf, BUF_SIZE, "NOT");
       break;
+    case OP_SWP:
+      snprintf(buf, BUF_SIZE, "SWP");
+      break;
     case OP_ASL:
       snprintf(buf, BUF_SIZE, "ASL(%u)", (unsigned)it.second);
       break;
@@ -659,6 +669,13 @@ private:
         {OP_XSR, 23},
         {OP_MUL, 0x2127599bf4325c37ULL},
         {OP_XSR, 47},
+#elif defined START_WITH_PROSPECTOR
+        {OP_MUL, 0xe4adbc73edb87283ULL},
+        {OP_XSR, 25},
+        {OP_NOT, 0},
+        {OP_SWP, 0},
+        {OP_MUL, 0x9743d1e18d4481c7ULL},
+        {OP_XSR, 30},
 #else
         {OP_ROR, 48}, // or 18
         {OP_ROR, 40}, //    38
