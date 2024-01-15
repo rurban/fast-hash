@@ -84,6 +84,7 @@ public:
     OP_SSL = 9,  // subshift left
     OP_SUB = 10,  // sub
     OP_LOR = 11, // rotate left
+    OP_XQO = 12, // xorsquare
     OP_NUM       // number of operations
   };
 
@@ -144,8 +145,8 @@ public:
       switch (type) {
       case OP_ADD: // by 0 makes not much sense
       case OP_SUB:
-        if (!v)
-          v |= 1;
+      case OP_XQO:
+        v = v ? v : 1;
         break;
       case OP_XSL: // limited to 64 bits
       case OP_XSR:
@@ -231,6 +232,7 @@ public:
   // may these ops be adjacent?
   int adjacent(enum op_type a, enum op_type b) {
     switch (a) {
+    case OP_XQO:
     case OP_LOR:
     case OP_NOT:
     case OP_SWP:
@@ -574,6 +576,13 @@ private:
       case OP_LOR:
         init <<= (*it)->arg;
         break;
+      case OP_XQO:
+        // xorsquare from https://github.com/skeeto/hash-prospector/issues/23
+        {
+          uint64_t n = (*it)->arg;
+          init = (n|1ull)^(n*n);
+        }
+        break;
       // init += ~(init << (*it)->arg)
       // init -= ~(init << (*it)->arg)
       case OP_NUM:
@@ -658,6 +667,9 @@ private:
       break;
     case OP_LOR:
       snprintf(buf, BUF_SIZE, "LOR(%u)", (unsigned)it.second);
+      break;
+    case OP_XQO:
+      snprintf(buf, BUF_SIZE, "XQO(%u)", (unsigned)it.second);
       break;
     case OP_NUM:
       snprintf(buf, BUF_SIZE, "UNKNOWN");

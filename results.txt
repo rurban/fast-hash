@@ -26,3 +26,7 @@ hash(uint64_t x)
 
 Best seen combination: ROR(48) ROR(40) MUL(2127599bf4325c37) XSR(34) 	2.231420
 Updated best seen score: aval_score=1.691164, time_score=0.503440, overall=2.194603
+Best seen combination: XSR(15) ROR(40) MUL(2127599bf4325c37) XSR(34) 	2.193718
+Updated best seen score: aval_score=1.681169, time_score=0.501315, overall=2.182484
+Best seen combination: XSR(15) ROR(40) MUL(2127599bf4325c37) XSR(34) 	2.182484
+Updated best seen score: aval_score=1.681767, time_score=0.498537, overall=2.180303
