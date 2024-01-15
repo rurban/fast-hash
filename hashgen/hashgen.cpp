@@ -35,6 +35,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <time.h>
 #include <ulib/common.h>
 #include <ulib/console.h>
@@ -53,6 +54,8 @@
     (a) ^= F(b);                                                               \
     swap(a, b);                                                                \
   })
+#define ARR_SIZE(x) sizeof(x)/sizeof(x[0])
+#define RAND_PICK(arr,_u,_v,_w) arr[RAND_NR_NEXT(_u, _v, _w) % ARR_SIZE(arr)]
 
 using namespace std;
 using namespace ulib;
@@ -101,7 +104,24 @@ public:
       int run() {
         while (is_running()) {
           uint64_t old = _op->arg;
-          _op->update(RAND_NR_NEXT(_u, _v, _w));
+          if (_op->type == OP_MUL) {
+            // some known good mult constants from other hashes
+            const uint64_t mul_constants[6] = {
+              UINT64_C(0x2127599bf4325c37),
+              UINT64_C(0xbf58476d1ce4e5b9),
+              UINT64_C(0x94d049bb133111eb),
+              UINT64_C(0x9743d1e18d4481c7),
+              UINT64_C(0xe4adbc73edb87283),
+              UINT64_C(0xff51afd7ed558ccd)
+            };
+            // pick from some changed fixed constants
+            do {
+              _op->arg = RAND_PICK(mul_constants, _u, _v, _w);
+            } while (_op->arg == old);  
+          }
+          else {
+            _op->update(RAND_NR_NEXT(_u, _v, _w));
+          }
           if (!_op->gen->evolve()) {
             ULIB_DEBUG("attempt to evolve with arg:%016llx -> %016llx was "
                        "cancelled",
@@ -127,9 +147,6 @@ public:
         if (!v)
           v |= 1;
         break;
-      case OP_MUL: // must be uneven to be reversible.
-        v |= 1;
-        break;
       case OP_XSL: // limited to 64 bits
       case OP_XSR:
       case OP_ROR:
@@ -139,7 +156,8 @@ public:
       case OP_LOR:
         v = v % 63 + 1;
         break;
-      case OP_NOT:
+      case OP_MUL: // ignored, picked from constants
+      case OP_NOT: // no args
       case OP_SWP:
         break;
       case OP_NUM:
@@ -683,7 +701,7 @@ private:
         {OP_XSR, 34},
 #endif
     };
-    for (unsigned i = 0; i < sizeof(ts) / sizeof(*ts); i++) {
+    for (unsigned i = 0; i < ARR_SIZE(ts); i++) {
       auto t = ts[i];
       op *new_op = new op(t.first, hashgen::instance);
       new_op->arg = t.second;
